@@ -22,51 +22,57 @@ const schedule = {
 };
 
 export const data = new SlashCommandBuilder()
-    .setName('calendar')
-    .setDescription('ดูตารางการเรียน')
-    .addNumberOption(option => option.setName('section').setDescription('sec ที่เรียน').setRequired(true))
+  .setName('calendar')
+  .setDescription('ดูตารางการเรียน')
+  .addNumberOption(option => option.setName('section').setDescription('sec ที่เรียน').setRequired(true))
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-    const section = interaction.options.getNumber('section') || 1;
-    const now = dayjs().format('dddd HH:mm'); // Example: 'Monday 14:32'
-    const [today, currentTime] = now.split(' ');
+  const section = interaction.options.getNumber('section') || 1;
+  const now = dayjs().format('dddd HH:mm'); // Example: 'Monday 14:32'
+  const [today, currentTime] = now.split(' ');
 
-    const current = schedule[section].find(entry => {
-      if (entry.day === today) {
-        const [start, end] = entry.time.split(' - ');
-        return dayjs(currentTime, 'HH:mm').isAfter(dayjs(start, 'HH:mm')) &&
-               dayjs(currentTime, 'HH:mm').isBefore(dayjs(end, 'HH:mm'));
-      }
-      return false;
+  const current = schedule[section].find(entry => {
+    if (entry.day === today) {
+      const [start, end] = entry.time.split(' - ');
+      return dayjs(currentTime, 'HH:mm').isAfter(dayjs(start, 'HH:mm')) &&
+        dayjs(currentTime, 'HH:mm').isBefore(dayjs(end, 'HH:mm'));
+    }
+    return false;
+  });
+
+  const scheduleText = schedule[section]
+    .filter(entry => entry.day === today)
+    .map(entry => {
+      const [start, end] = entry.time.split(' - ');
+      const isPassed = dayjs(currentTime, 'HH:mm').isAfter(dayjs(end, 'HH:mm'));
+      const isCurrent = current?.subject === entry.subject;
+
+      const emoji = isPassed ? '✅' : isCurrent ? '⏳' : '💤';
+
+      return [
+        `${emoji} **${entry.subject}**`,
+        `🕒 เวลา: ${entry.time}`,
+        `🏫 ห้อง: ${entry.room}`,
+        `\u200b`
+      ].join('\n');
+    })
+    .join('\n');
+
+  const embed = new EmbedBuilder()
+    .setColor(0x00ff00)
+    .setTitle('📅 ตารางการเรียนวันนี้')
+    .addFields(
+      { name: '📆 วันที่', value: `**${today}** (${dayjs().format('DD/MM/YYYY')})`, inline: true },
+      { name: '⏰ เวลา', value: `${currentTime}`, inline: true },
+      { name: '🎓 SECTION', value: `**${section}**`, inline: true },
+      { name: '📚 รายวิชา', value: scheduleText || 'ไม่มีตารางเรียนวันนี้' }
+    )
+    .setThumbnail(interaction.user.displayAvatarURL())
+    .setTimestamp()
+    .setFooter({
+      text: '🔐 ตารางการเรียน',
+      iconURL: 'http://hub.it.kmitl.ac.th/hub/wp-content/uploads/2025/02/logo-white.png'
     });
 
-    const scheduleText = schedule[section]
-        .filter(entry => entry.day === today)
-        .map(entry => {
-            const [_, end] = entry.time.split(' - ');
-            const isPassed = dayjs(currentTime, 'HH:mm').isAfter(dayjs(end, 'HH:mm'));
-            const isCurrent = current?.subject === entry.subject;
-            
-            const emoji = isPassed ? '✅ ' : isCurrent ? '⏳ ' : '💤 ';
-            return `${emoji}${entry.time}: ${entry.subject} (${entry.room})`;
-        })
-        .join('\n');
-
-    const embed = new EmbedBuilder()
-        .setColor(0x00ff00)
-        .setTitle('📅 ตารางการเรียน')
-        .addFields(
-            { name: '📅 วันที่', value: `วัน ${today} ที่ ${dayjs().format('DD/MM/YYYY')}`, inline: true },
-            { name: '⏰ เวลา', value: `เวลา ${currentTime}`, inline: true },
-            { name: '🏫 ห้องเรียน', value: scheduleText, inline: true },
-            { name: '🎓 SECTION', value: `**${section}**`, inline: true }
-        )
-        .setThumbnail(interaction.user.displayAvatarURL())
-        .setTimestamp()
-        .setFooter({
-            text: '🔐 ตารางการเรียน',
-            iconURL: 'http://hub.it.kmitl.ac.th/hub/wp-content/uploads/2025/02/logo-white.png'
-        });
-
-    await interaction.reply({ embeds: [embed], ephemeral: false });
+  await interaction.reply({ embeds: [embed], ephemeral: false });
 }
