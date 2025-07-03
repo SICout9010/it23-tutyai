@@ -6,20 +6,20 @@ dotenv.config();
 export const data = new SlashCommandBuilder()
     .setName('verify')
     .setDescription('ยืนยันตัวตนผู้เข้าแข่งขัน')
-    .addStringOption(option => 
+    .addStringOption(option =>
         option.setName('student_id')
-        .setDescription('รหัสนักศึกษา')
-        .setRequired(true)
+            .setDescription('รหัสนักศึกษา')
+            .setRequired(true)
     )
-    .addStringOption(option => 
+    .addStringOption(option =>
         option.setName('nickname')
-        .setDescription('ชื่อเล่น')
-        .setRequired(true)
+            .setDescription('ชื่อเล่น')
+            .setRequired(true)
     )
-    .addNumberOption(option => 
+    .addNumberOption(option =>
         option.setName('section')
-        .setDescription('sec')
-        .setRequired(true)
+            .setDescription('sec ที่อยู่ปัจจุบัน')
+            .setRequired(true)
     )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
@@ -32,6 +32,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     await interaction.deferReply({ ephemeral: true });
 
+    const allowedSections = [1, 2, 3];
+
     if (!studentId || !nickname || !section) {
         const failEmbed = new EmbedBuilder()
             .setColor(0xff0000)
@@ -39,25 +41,53 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             .setDescription('กรุณาระบุข้อมูลให้ครบถ้วน')
             .setTimestamp()
             .setFooter({
-                text: 'ระบบยืนยันตัวตน',
-                iconURL: 'https://cdn.discordapp.com/app-icons/1364925470143156265/b69ddb6462f622ac74d34acd9745dad5.png'
+                text: '🔐 verify system',
+                iconURL: 'http://hub.it.kmitl.ac.th/hub/wp-content/uploads/2025/02/logo-white.png'
             });
         await interaction.deleteReply();
         await interaction.channel?.send({ embeds: [failEmbed] });
         return;
     }
 
-    // await member?.roles.add(interaction.guild?.roles.cache.find(role => role.name === 'IT23')!);
+    if (!allowedSections.includes(section)) {
+        const invalidSecEmbed = new EmbedBuilder()
+            .setColor(0xff0000)
+            .setTitle('⚠️ ข้อมูล section ไม่ถูกต้อง')
+            .setDescription(`กรุณาเลือกห้องเรียนแค่ตาม Sec ที่มีจิง`)
+            .setTimestamp()
+            .setFooter({
+                text: '🔐 verify system',
+                iconURL: 'http://hub.it.kmitl.ac.th/hub/wp-content/uploads/2025/02/logo-white.png'
+            });
+        await interaction.deleteReply();
+        await interaction.channel?.send({ embeds: [invalidSecEmbed] });
+        return;
+    }
+
+    const sectionRoles = {
+        1: '1390368345567662113',
+        2: '1390368403377750088',
+        3: '1390368446528618668' 
+    };
+
+    const it23RoleId = '1390368273320644639';
+    const secRoleId = sectionRoles[section];
+    
+    await member?.roles.add([it23RoleId, secRoleId]);
+    await member?.setNickname(`${nickname} Sec${section}`);
+
+    // await member?.roles.add(interaction.guil
+    // d?.roles.cache.find(role => role.name === 'IT23')!);
     // await member?.setNickname(nickname + ' Sec' + section)
 
     const successEmbed = new EmbedBuilder()
         .setColor(0x00ff00)
         .setTitle('✅ ยืนยันตัวตนสำเร็จแล้ว')
         .setDescription([
-            `> 👤 **ชื่อในระบบ :** ${member?.displayName}`,
-            `> 👤 **ชื่อเล่น :** ${nickname}`,
-            `> 🏷️ **Discord :** <@${interaction.user.id}>`,
-            `> 🎺 **ได้รับยศ :** <@&1364676158318182440>`
+            `> 👤 **StudentId :** ${studentId}`,
+            `> 🧸 **ชื่อเล่น :** ${nickname}`,
+            `> 🏷️ **SEC :** ${section}`,
+            `> 🎺 **ได้รับยศ :** <@&${it23RoleId}> + <@&${secRoleId}>`
         ].join('\n'))
         .setThumbnail(interaction.user.displayAvatarURL())
         .setTimestamp()
