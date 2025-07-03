@@ -1,6 +1,7 @@
 import { Client, Events, GatewayIntentBits, Collection, REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
 import * as verify from './commands/verify';
+import * as calendar from './commands/calendar';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ const client = new Client({
 client.commands = new Collection();
 
 client.commands.set(verify.data.name, verify);
+client.commands.set(calendar.data.name, calendar);
 
 client.once(Events.ClientReady, async c => {
     console.log(`Logged in as ${c.user.tag}!`);

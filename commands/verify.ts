@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, GuildMember } from 'discord.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -73,7 +73,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const it23RoleId = '1390368273320644639';
     const secRoleId = sectionRoles[section];
     
-    await member?.roles.add([it23RoleId, secRoleId]);
+    // await member?.roles.add([it23RoleId, secRoleId]);
+    await interaction.guild?.members.addRole({
+        role: it23RoleId,
+        user: member as GuildMember
+    });
+    await interaction.guild?.members.addRole({
+        role: secRoleId,
+        user: member as GuildMember
+    });
     await member?.setNickname(`${nickname} Sec${section}`);
 
     // await member?.roles.add(interaction.guil
